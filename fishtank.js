@@ -1,9 +1,16 @@
 
-//=================================================================================================
-// Fishtank (XDft) data storage, modification, and retreval system.
-// -- Takes a lot of inspiration from jquery's internal structure
-// -- Geoff Daigle - 2013
-//=================================================================================================
+/* ================================================================================================
+ *
+ *   fishtank.js (XDft)
+ *   @version 1.0.2
+ *
+ *   The way client-side data management should be.
+ *
+ *   @author Geoff Daigle
+ *
+ * ================================================================================================
+ */
+
 
 (function( window, undefined ) {
 	var
@@ -200,7 +207,7 @@
 									// pass all of the results into one big array
 									if (arrayIndex === 'all'){
 										aLen = pointObj.length;
-										for (; p < aLen; p++) {
+										for (p=0; p < aLen; p++) {
 											resArray.push(pointObj[ p ]);
 										}
 
@@ -316,7 +323,8 @@
 
 		// as a safety, this copys an object and returns it
 		makeCopy: function( obj ){
-			return clone(obj);
+			var cloneobj = clone(obj);
+			return cloneobj.__proto__;
 		},
 
 	    // Number of returned results. The default is 0
@@ -440,7 +448,6 @@
 				// where() only applies to arrays so anything else doesnt count
 				if (curContext.constructor === Array) {
 					contextLen = curContext.length;
-
 					// iterate through the objects in the context array
 					for (i = 0; i < contextLen; i++) {
 						curObj = curContext[i];
@@ -465,8 +472,8 @@
 							if (prop === '_value_') {
 								if (typeof curObj !== 'object' && typeof curObj !== 'boolean') {
 									// convert curobj to string
-									curObj = ""+curObj+"";
-									regpattern = new RegExp('^'+curVal.replace(/\%/g, '(.*?)')+"$");
+									curObj = ""+curObj.toLowerCase()+"";
+									regpattern = new RegExp('^'+curVal.replace(/\%/g, '(.*?)')+"$", 'i');
 									regextest = regpattern.test( curObj );
 									if (regextest) {
 										// found a match, push to the array
@@ -480,8 +487,8 @@
 								if (typeof curObj === 'object' && curObj.constructor !== Array) {
 									if (curObj [ prop ] !== undefined) {
 										if (typeof compareObj[ prop ] !== 'boolean'){
-											objItem = ""+curObj [ prop ]+"";
-											regpattern = new RegExp('^'+curVal.replace(/\%/g, '(.*?)')+"$");
+											objItem = (""+curObj[ prop ]+"").toLowerCase();
+											regpattern = new RegExp('^'+curVal.replace(/\%/g, '(.*?)')+"$", 'i');
 											regextest = regpattern.test( objItem );
 											if (regextest) {
 												// found a match, push to the array
@@ -513,14 +520,14 @@
 		},
 
 		// update data nodes
-		update: function( updateObj ) {
+		update: function( updateObj, nosync ) {
 			// catch invalid update objects
 			if (updateObj === undefined || typeof updateObj !== 'object') {
 				console.error('Fishtank error: XDft.fn.update( updateObj ): "updateObj" must be an object');
 				return false;
 			}
 
-			var prop, curupdate, o, curlen, i;
+			var prop, curupdate, o, curlen, im, nosync = nosync || false;
 
 			// we could have multiple contexts (organized by property name) in here 
 			// ...so we have to loop through them
@@ -542,7 +549,7 @@
 							// update all objects with that property
 							if (curupdate[i][ prop ] !== undefined) {
 								curupdate[i][ prop ] = updateObj[prop] ;
-								if (curupdate[i]._mod_ !== undefined) {
+								if (curupdate[i]._mod_ !== undefined && !nosync) {
 									curupdate[i]._mod_ = new Date().getTime();
 									syncStatus = 0;
 								}
@@ -554,7 +561,7 @@
 						// simply make the update on it's matching property
 						if (curupdate[ prop ] !== undefined) {
 							curupdate[ prop ] = updateObj[prop];
-							if (curupdate._mod_ !== undefined) {
+							if (curupdate._mod_ !== undefined && !nosync) {
 								curupdate._mod_ = new Date().getTime();
 								syncStatus = 0;
 							}
@@ -578,10 +585,11 @@
 			return fishproto;
 		},
 
+
 		// insert a data node
 		insert:function( propName, dataObj ) {
 			// catch invalid prop name
-			if (propName === undefined || typeof propName !== 'string') {
+			if (propName === undefined || (typeof propName !== 'string' && typeof propName !== 'object')) {
 				console.error('Fishtank error: XDft.fn.insert( propName, [dataObj] ): "propName" is invalid');
 				return false;
 			}
@@ -594,11 +602,22 @@
 			// default to an empty string if the object is not specified
 			var insertdata = dataObj || '';
 
-			// insert data
-			dataContext[ propName ] = dataObj;
+			if (typeof propName === 'object'){
+				if (dataContext.constructor === Array){
+					dataContext.push(propName);
+				} else {
+					dataContext = fishproto.getValue(true);
+					if (dataContext.constructor === Array){
+						dataContext.push(propName);
+					}
+				}
+			} else {
+				// insert data
+				dataContext[ propName ] = dataObj;
 
-			// place new data into the context
-			dataContext = dataContext[ propName ];
+				// place new data into the context
+				dataContext = dataContext[ propName ];
+			}
 
 			syncLocalStorage();
 
