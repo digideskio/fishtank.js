@@ -118,12 +118,6 @@
 				return this;
 			}
 
-			// XDft(object) - dont select anything, just do operations
-			if (typeof selector === 'object' && context === undefined) {
-				dataContext = selector;
-				return this;
-			}
-
 			// We can search for data within a context object as opposed to using
 			// the fishtank main storage object - This allows us to use fishtank
 			// as a utility and not necessarily as a database tool.
@@ -330,7 +324,13 @@
 		// as a safety, this copys an object and returns it
 		makeCopy: function( obj ){
 			var cloneobj = clone(obj);
-			return cloneobj.__proto__;
+			if (cloneobj.__proto__){
+				return cloneobj.__proto__;
+			} else if(cloneobj.prototype) {
+				return cloneobj.prototype;
+			} else {
+				return cloneobj;
+			}
 		},
 
 	    // Number of returned results. The default is 0
@@ -380,9 +380,9 @@
 		// get the context value if only one item is selected 
 		getValue: function($nocopy) {
 			var nocopy = $nocopy || false;
-			var datalen = 0, prop, copyobj;
-		    for(prop in dataContext) {
-		    	if(dataContext.hasOwnProperty(prop)){
+			var datalen = 0, prop, prop2, copyobj;
+		    for(prop2 in dataContext) {
+		    	if(dataContext.hasOwnProperty(prop2)){
 			    	datalen++;
 			    }
 		    }
@@ -393,7 +393,13 @@
 					} else {
 						copyobj = this.makeCopy(dataContext);
 					}
-					return copyobj[ prop ];
+					if (copyobj[ prop ]) {
+						return copyobj[ prop ];
+					} else if (copyobj.prototype[ prop ]) {
+						copyobj.prototype[ prop ]
+					} else {
+						return {};
+					}
 				}
 			}
 		}
