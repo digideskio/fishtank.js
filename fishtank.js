@@ -118,6 +118,12 @@
 				return this;
 			}
 
+			// XDft(object) - dont select anything, just do operations
+			if (typeof selector === 'object' && context === undefined) {
+				dataContext = selector;
+				return this;
+			}
+
 			// We can search for data within a context object as opposed to using
 			// the fishtank main storage object - This allows us to use fishtank
 			// as a utility and not necessarily as a database tool.
