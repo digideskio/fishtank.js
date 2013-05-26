@@ -1,4 +1,3 @@
-
 /* ================================================================================================
  *
  *   fishtank.js (XDft)
@@ -115,6 +114,12 @@
 		init: function( selector, context ) {
 			// for construction 
 			if(selector === true && context === undefined) {
+				return this;
+			}
+			
+			// XDft(object) - dont select anything, just do operations
+			if (typeof selector === 'object' && context === undefined) {
+				dataContext = selector;
 				return this;
 			}
 
