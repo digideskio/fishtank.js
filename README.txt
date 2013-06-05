@@ -1,4 +1,3 @@
-
 /* ================================================================================================
  *
  *   fishtank.js (XDft)
@@ -12,3 +11,6 @@
  */
 
 Full readme, docs and demos coming soon.
+
+In the meantime, check out index.html for all of the jasmine tests (aka examples of use).
+
