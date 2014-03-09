@@ -155,8 +155,9 @@ console.log( resultSet_car ); // null
 
 // you can remove multiple entries as once
 XDft('animals').where('isImaginary', false).remove();
-var resultSet_animal = XDft('animals').where('species', 'spider').get();
-console.log( resultSet_animal.length ); // 0
+var rs = XDft('animals').where('species', 'spider').get();
+var rs2 = XDft('animals').where('species', 'dog').get();
+console.log( rs.length + ' and ' + rs2.length  ); // 0 and 0
 
 // You can remove specific indexes from a result set as well
 XDft('animals').where('isImaginary', false).remove( 1 );  // cat
