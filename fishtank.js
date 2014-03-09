@@ -1,11 +1,11 @@
 /* ================================================================================================
  *
  *   fishtank.js (XDft)
- *   @version 1.1.0
+ *   @version 1.1.1
  *
- *   The way client-side data management should be.
+ *   A quick and dirty data management tool for storing and fetching data on the client side.
  *
- *   @author Geoff Daigle
+ *   @author (⌐■_■) Geoff Daigle - twitter.com/dailydaigle
  *
  * ================================================================================================
  */
@@ -218,11 +218,10 @@ fishtank.fn.remove = function( /* args */ ) {
 					selector_parent = util.object_rsearch( prev_selector_context.split('.'), selector_parent );
 				}
 				delete selector_parent[ val ];
+				if ( util.get_type( selector_parent ) === 'array' ) {
+					selector_parent.splice(val, 1);
+				}
 			} );
-			if (context_type === 'array') {
-				// TODO: remove "undefined"'s from resulting array
-				//selector_parent = util.grep( selector_parent, function(n){ return(n) });
-			}
 
 		} else {
 			// value removal
@@ -256,12 +255,11 @@ fishtank.fn.remove = function( /* args */ ) {
 			util.for_each( deletion_selectors, function( key, val ) {
 				if ( val === args[0] ) {
 					delete selector_parent[ val ];
+					if ( util.get_type( selector_parent ) === 'array' ) {
+						selector_parent.splice(val, 1);
+					}
 				}
 			} );
-			if (context_type === 'array') {
-				// TODO: proper data deletions for arrays
-				//selector_parent = util.grep( selector_parent, function(n){ return(n) });
-			}
 
 		} else {
 			if ( typeof selector_context[ args[0] ] !== 'undefined' ) {

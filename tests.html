@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Fishtank test v1.1.1</title>
+	<link rel="stylesheet" href="http://jasmine.github.io/1.3/lib/jasmine.css">
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script src="jasmine.js"></script>
+	<script src="jasmine.html.js"></script>
+	<script src="fishtank.js"></script>
+	<script>
+		/* test data objects */
+		var test_data = {
+			animals: [
+				{ species: 'dog', isImaginary: false },
+				{ species: 'cat', isImaginary: false },
+				{ species: 'spider', isImaginary: false },
+				{ species: 'octopus', isImaginary: false },
+				{ species: 'dragon', isImaginary: true },
+				{ species: 'elephant', isImaginary: false },
+				{ species: 'monkey', isImaginary: false },
+				{ species: 'dolphin', isImaginary: false },
+				{ species: 'unicorn', isImaginary: true }
+			],
+			cars: {
+				volvo: {
+					isForeign: true,
+					founded: '1915',
+					country: 'Sweden'
+				},
+				ford: {
+					isForeign: false,
+					founded: '1903',
+					country: 'United States'
+				},
+				audi: {
+					isForeign: true,
+					founded: '1909',
+					country: 'Germany'
+				}
+			}
+		};
+	</script>
+
+	<script>
+		// add the data for the below tests
+		XDft.insert( test_data );
+
+		/* jasmine tests */
+
+		describe('Getting data tests using .get() and getRow()', function() {
+			it('Gets the correct object with a blank selector', function() {
+				var result = XDft().get();
+					has_values = ( typeof result.cars !== 'undefined' && typeof result.animals !== 'undefined' );
+				expect( has_values ).toBe(true);
+			});
+
+			it('Gets the correct object with an object selector', function() {
+				var result = XDft( 'cars.volvo.founded' ).get();
+				expect( result ).toBe( '1915' );
+			});
+
+			it('Gets the correct object with an object selector and then find()', function() {
+				var result = XDft( 'cars.volvo' ).find('founded').get();
+				expect( result ).toBe( '1915' );
+			});
+
+			it('Gets the correct object with an object and array index selector', function() {
+				var result = XDft( 'animals.eq(4).species' ).get();
+				expect( result ).toBe( 'dragon' );
+			});
+
+			it('Gets the correct object using find() for every step after the first one', function() {
+				var result = XDft( 'animals' ).find( 'eq(4)' ).find( 'species' ).get();
+				expect( result ).toBe( 'dragon' );
+			});
+
+			it('Gets the length attribute of an array object using a selector VAR.length', function() {
+				var result = XDft( 'animals.length' ).get();
+				expect( result ).toBe( 9 );
+			});
+
+			it('Gets the first element in an array when using getRow() with no arguments', function() {
+				var result = XDft( 'animals' ).getRow();
+				expect( result.species ).toBe( 'dog' );
+			});
+
+			it('Gets the 4th element in an array when using getRow() with a specified index of 3 (zero-based)', function() {
+				var result = XDft( 'animals' ).getRow( 3 );
+				expect( result.species ).toBe( 'octopus' );
+			});
+
+			it('Returns a null object when the object expected in the selector doesnt exist', function() {
+				var result = XDft( 'cars.volvo.isADumbCar' ).get();
+				expect( result ).toBe( null );
+			});
+
+			it('Returns a null object when we try to select something in an array without using eq()', function() {
+				var result = XDft( 'animals.species' ).get();
+				expect( result ).toBe( null );
+			});
+		});
+
+		describe('Getting data with implied selector with .use()', function() {
+			beforeEach(function() {
+				XDft.use( 'cars' ); // implied selector is 'cars' for this suite
+			});
+
+			afterEach(function() {
+				XDft.use( '' ); 
+			});
+
+			it('Gets the correct object while using an implied selector', function() {
+				var result = XDft( 'ford.country' ).get();  // doesnt need to use 'cars' now
+				expect( result ).toBe( 'United States' );
+			});
+
+			it('Can switch between implied selectors using multiple .use() calls', function() {
+				// starting with 'cars'
+				var result = XDft( 'ford.founded' ).get();
+				expect( result ).toBe( '1903' );
+
+				// switch to an element of 'animals'
+				XDft.use( 'animals.eq(1)' );
+				var result2 = XDft( 'species' ).get();
+				expect( result2 ).toBe( 'cat' );
+			});
+
+		});
+
+		describe('Getting the pointer object with .pointer()', function() {
+			var test_data_copy = {};
+
+			beforeEach(function() {
+				test_data_copy = $.extend( true, {}, test_data );
+			});
+
+			afterEach(function() {
+				XDft.insert( test_data_copy ); 
+			});
+
+			it('Gets the correct object', function() {
+				var result = XDft.pointer( 'cars' );
+				expect( result.ford.country ).toBe( 'United States' );
+			});
+
+			it('Can modify the object from outside fishtank', function() {
+				var result = XDft.pointer( '' );
+					result.cars.ford.country = 'All your cars are belong to us';
+				var new_result = XDft( 'cars.ford.country' ).get();
+
+				expect( new_result ).toBe( 'All your cars are belong to us' );
+			});
+		});
+
+		describe('Inserting new object properties with .insert()', function() {
+			var test_data_copy = {};
+
+			beforeEach(function() {
+				test_data_copy = $.extend( true, {}, test_data );
+			});
+
+			afterEach(function() {
+				XDft.insert( test_data_copy ); 
+			});
+
+			it('Adds new property to the top-level object using two strings for key-value pairs', function() {
+				var insert_data = XDft.insert( 'hello_kitty', 'Hello, Kitty!' ).find( 'hello_kitty' ).get();
+				expect( insert_data ).toBe( 'Hello, Kitty!' );
+			});
+
+			it('Adds two new properties to the top-level object using an object', function() {
+				var object_to_insert = {
+					hello_kitty: 'Hello, Kitty!',
+					goodbye_kitty: 'Goodbye, Kitty!'
+				}
+				XDft.insert( object_to_insert );
+
+				var insert_data1 = XDft( 'hello_kitty' ).get();
+				var insert_data2 = XDft( 'goodbye_kitty' ).get();
+
+				expect( insert_data1 ).toBe( 'Hello, Kitty!' );
+				expect( insert_data2 ).toBe( 'Goodbye, Kitty!' );
+			});
+
+			it('Adds new property a deeper object after using a selector string, using key value pairs', function() {
+				XDft( 'animals.eq(0)' ).insert( 'is_cuddly', true );
+
+				var insert_data = XDft( 'animals.eq(0).is_cuddly' ).get();
+				expect( insert_data ).toBe( true );
+			});
+
+			it('Adds new property a deeper object after using an object', function() {
+				XDft( 'animals.eq(0)' ).insert( { is_cuddly: true, covering: 'fur' } );
+
+				var insert_data = XDft( 'animals.eq(0)' ).get();
+				expect( insert_data.is_cuddly ).toBe( true );
+				expect( insert_data.covering ).toBe( 'fur' );
+			});
+
+			it('Fails to update when the context is something other than an object type', function() {
+				XDft( 'animals' ).insert( { species: 'lemur', isImaginary: false } );
+				var insert_data = XDft( 'animals' ).get();
+				expect( typeof insert_data.lemurs ).toBe( 'undefined' );
+
+				XDft( 'cars.ford.founded' ).insert( { isOldTimey: true } ); // cars.ford.founded is a string
+				var insert_data = XDft( 'cars.ford.founded' ).get();
+				expect( typeof insert_data.isOldTimey ).toBe( 'undefined' );
+			});
+
+		});
+
+
+		describe('Inserting new array elements with .append() and .prepend()', function() {
+			var test_data_copy = {};
+
+			beforeEach(function() {
+				test_data_copy = $.extend( true, {}, test_data );
+			});
+
+			afterEach(function() {
+				XDft.insert( test_data_copy ); 
+			});
+
+			it('Appends new data to the bottom of an array using .append()', function() {
+				XDft( 'animals' ).append( { species: 'lemur', isImaginary: false } );
+				var animal_len = XDft( 'animals.length' ).get();
+				var insert_data = XDft( 'animals.eq('+( animal_len-1 )+').species' ).get();
+				expect( insert_data ).toBe( 'lemur' );
+			});
+
+			it('Prepends new data to the bottom of an array using .prepend()', function() {
+				XDft( 'animals' ).prepend( { species: 'dragonfly', isImaginary: false } );
+				var insert_data = XDft( 'animals.eq(0).species' ).get();
+				expect( insert_data ).toBe( 'dragonfly' );
+			});
+
+			it('Fails to update when the context is something other than an array type', function() {
+				XDft( 'cars' ).append( { species: 'lemur', isImaginary: false } );
+				var insert_data = XDft( 'cars' ).get();
+				expect( typeof insert_data[0] ).toBe( 'undefined' );
+
+				XDft( 'cars.ford.founded' ).prepend( { isOldTimey: true } ); // cars.ford.founded is a string
+				var insert_data = XDft( 'cars.ford.founded.eq(0)' ).get();
+				expect( insert_data ).toBe( null ); 
+			});
+
+		});
+
+
+		describe('Get arrays of data using .where()', function() {
+			it('Gets all values with property name of the first argument with values that equal the second argument', function() {
+				var result = XDft( 'animals' ).where( 'isImaginary', true ).get();
+				expect( result.length ).toBe( 2 );
+			});
+
+			it('Gets all values with matching property name / value pairs as the argument object', function() {
+				var result = XDft( 'animals' ).where( { isImaginary: true, species: 'dragon' } ).get();
+				expect( result.length ).toBe( 1 );
+			});
+
+			it('Gets all values with property/value pairs matching the parsed string (in this case, greater than VALUE)', function() {
+				// notice how it iterates over an object as well
+				var result = XDft( 'cars' ).where( 'founded > 1905' ).get();
+				expect( result.length ).toBe( 2 );
+			});
+		});
+
+
+		describe('Update data with .update()', function() {
+			it('Updates a single object value using two strings', function() {
+				XDft('cars.ford').update('country', 'Merica');
+				expect( XDft('cars.ford.country').get() ).toBe( 'Merica' );
+			});
+
+			it('Updates a single object value using an object', function() {
+				XDft('cars.ford').update({ country: 'United States' });
+				expect( XDft('cars.ford.country').get() ).toBe( 'United States' );
+			});
+
+			it('Updates an entire .where() result set using two strings', function() {
+				XDft('cars').where( 'isForeign', true ).update( 'country', 'Somewhere not America' );
+				expect( XDft('cars.audi.country').get() ).toBe( 'Somewhere not America' );
+				expect( XDft('cars.volvo.country').get() ).toBe( 'Somewhere not America' );
+			});
+
+			it('Updates an entire .where() result set using an object', function() {
+				XDft('cars').where( 'isForeign', true ).update({ country: 'Far far away' });
+				expect( XDft('cars.audi.country').get() ).toBe( 'Far far away' );
+				expect( XDft('cars.volvo.country').get() ).toBe( 'Far far away' );
+			});
+
+			it('Updates by iteration over the current context (array or object) by passing "true" and an object', function() {
+				XDft('cars').update( true, { country: 'Arrested Development is back!' });
+				expect( XDft('cars.audi.country').get() ).toBe( 'Arrested Development is back!' );
+				expect( XDft('cars.volvo.country').get() ).toBe( 'Arrested Development is back!' );
+			});
+
+		});
+
+
+		describe('Remove values with .remove()', function() {
+			it('Deletes all objects found with a selector', function() {
+				XDft('cars.volvo').remove();
+				expect( XDft('cars.volvo').get() ).toBe( null );
+			});
+
+			it('Deletes a native type variable found with a selector', function() {
+				XDft('cars.ford.founded').remove();
+				expect( XDft('cars.ford.founded').get() ).toBe( null );
+			});
+
+			it('Deletes all objects in a result set (object) after using .where()', function() {
+				XDft('cars').where( 'founded', 1909 ).remove();
+				expect( XDft('cars.audi').get() ).toBe( null );
+			});
+
+			it('Deletes the index of a result set array and doesnt leave an undefined value in it\s place', function() {
+				XDft('animals').where( 'isImaginary', false ).remove( 1 ); // cat
+				expect( XDft('animals.eq(1)').get() ).toEqual( { species: 'spider', isImaginary: false } );
+			});
+
+			it('Deletes all objects in a result set (array) after using .where()', function() {
+				XDft('animals').where( 'species', 'octopus' ).remove();
+				expect( XDft('animals.eq(3)').get() ).toEqual( { species: 'elephant', isImaginary: false } );
+			});
+
+			it('Deletes a property of the context, whether it be an index or a property name', function() {
+				XDft('animals.eq(0)').remove( 'species' );
+				expect( XDft( 'animals.eq(0).species' ).get() ).toBe( null );
+			});
+
+		});
+
+	</script>
+</head>
+<body>
+
+	<h1 style="font-weight:300">Fishtank data tests (with Jasmine.js)</h1>
+	<div>
+		<p>Here is the data that is being used to test on:</p>
+		<style>
+			body {
+				padding-bottom:24px;
+			} 
+			.keyword {
+				color: rgb(14, 140, 224);
+			}
+			.string {
+				color: rgb(219, 153, 12);
+			}
+			.boolean {
+				color: rgb(158, 19, 213);
+			}
+			pre {
+				color: #333;
+			}
+		</style>
+		<pre>
+	<span class="keyword">var</span> test_data = {
+		animals: [
+			{ species: <span class="string">'dog'</span>, isImaginary: <span class="boolean">false</span> },
+			{ species: <span class="string">'cat'</span>, isImaginary: <span class="boolean">false</span> },
+			{ species: <span class="string">'spider'</span>, isImaginary: <span class="boolean">false</span> },
+			{ species: <span class="string">'octopus</span>', isImaginary: <span class="boolean">false</span> },
+			{ species: <span class="string">'dragon'</span>, isImaginary: <span class="boolean">true</span> },
+			{ species: <span class="string">'elephant'</span>, isImaginary: <span class="boolean">false</span> },
+			{ species: <span class="string">'monkey'</span>, isImaginary: <span class="boolean">false</span> },
+			{ species: <span class="string">'dolphin'</span>, isImaginary: <span class="boolean">false</span> },
+			{ species: <span class="string">'unicorn'</span>, isImaginary: <span class="boolean">true</span> }
+		],
+		cars: {
+			volvo: {
+				isForeign: <span class="boolean">true</span>,
+				founded: <span class="string">'1915'</span>,
+				country: <span class="string">'Sweden'</span>
+			},
+			ford: {
+				isForeign: <span class="boolean">false</span>,
+				founded: <span class="string">'1903'</span>,
+				country: <span class="string">'United States'</span>
+			},
+			audi: {
+				isForeign: <span class="boolean">true</span>,
+				founded: <span class="string">'1909'</span>,
+				country: <span class="string">'Germany'</span>
+			}
+		}
+	};
+		</pre>
+	</div>
+	<br>
+	<div class="page">
+	</div>
+	<script>
+		(function() {
+			var jasmineEnv = jasmine.getEnv();
+			jasmineEnv.updateInterval = 250;
+
+			var htmlReporter = new jasmine.HtmlReporter();
+			jasmineEnv.addReporter(htmlReporter);
+
+			jasmineEnv.specFilter = function(spec) {
+				return htmlReporter.specFilter(spec);
+			};
+
+			var currentWindowOnload = window.onload;
+			window.onload = function() {
+				if (currentWindowOnload) {
+					currentWindowOnload();
+				}
+
+				document.querySelector('.page').innerHTML = jasmineEnv.versionString();
+				execJasmine();
+			};
+
+			function execJasmine() {
+				jasmineEnv.execute();
+			}
+		})();
+	</script>
+</body>
+</html>

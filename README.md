@@ -5,7 +5,7 @@ Fishtank is a quick and dirty data management tool for storing and fetching data
  
 Version
 -
-1.1.0
+1.1.1
 
 Author
 -
@@ -35,6 +35,7 @@ Simply include the code in your html &lt;head&gt; element.
 Examples
 ---------
 Let's use this test data below to run through some examples:
+(note: assume the dataset regenerates to it's original state after each example)
 
 ```js
 var test_data = {
@@ -144,14 +145,34 @@ var resultSet_animals = XDft('animals').where('isImaginary', true).get();
 console.log( resultSet_animals.length ); // 0
 ```
 
+Remove data entries using .remove()
+
+```js
+// Remove an entry that matches your search with .where()
+XDft('cars').where( 'founded', 1909 ).remove();
+var resultSet_car = XDft('cars.audi').get();
+console.log( resultSet_car ); // null
+
+// you can remove multiple entries as once
+XDft('animals').where('isImaginary', false).remove();
+var resultSet_animal = XDft('animals').where('species', 'spider').get();
+console.log( resultSet_animal.length ); // 0
+
+// You can remove specific indexes from a result set as well
+XDft('animals').where('isImaginary', false).remove( 1 );  // cat
+var resultSet_animal = XDft('animals').where('species', 'cat').get();
+console.log( resultSet_animal.length ); // 0
+```
+
+Tests
+--
+Run tests.html to use Jasmine and test all of Fishtank's functionality. Also serves as an in-depth demo!
+
 Coming soon
 --
 - [ ] XDft.extend() for adding plugins
-- [ ] Documentation on remove(), getRow(), first(), and append()/prepend()
+- [ ] Documentation on getRow(), first(), and append()/prepend()
 
-Notes
----
-There is a small bug in remove() where it doesnt clear out "undefined" values when removing from an array. I am working on this.
 
 License
 -
